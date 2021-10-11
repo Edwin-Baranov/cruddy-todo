@@ -16,19 +16,22 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+  // var data = _.map(items, (text, id) => {
+  //   //return { id, text };
+  // });
+  fs.readdir(exports.dataDir, (err, files) => {
+    callback(null, files);
   });
-  callback(null, data);
 };
 
 exports.readOne = (id, callback) => {
-  var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
+  fs.readFile(path.join(exports.dataDir, `${id}.txt`), (err, data) => {
+    if (err) {
+      callback(err, '');
+    } else {
+      callback(null, { id, text: String(data)});
+    }
+  });
 };
 
 exports.update = (id, text, callback) => {
