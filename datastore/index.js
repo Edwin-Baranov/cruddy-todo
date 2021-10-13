@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
+const Promise = require('bluebird');
 const counter = require('./counter');
 
-var items = {};
+var readDirPromise = Promise.promisify(fs.readdir);
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
@@ -15,24 +16,23 @@ exports.create = (text, callback) => {
   });
 };
 
-exports.readAll = (callback) => {
-  // var data = _.map(items, (text, id) => {
-  //   //return { id, text };
-  // });
-  fs.readdir(exports.dataDir, (err, files) => {
-    callback(null, files);
-  });
+exports.readAll = (callback) => {                           //
+  readDirPromise(exports.dataDir)                           // Invoke readDirPromise to start chain
+    .then(files => {                                        // Then with array of files
+      return files.map((fileName) => {                      // return map result of array
+        return readOnePromise(path.parse(fileName).name);   // with an invoked promise of read one
+      });
+    }).then(Promise.all)                          // Wait for all running promises to finish
+    .then((todos) => { callback(null, todos); }); // Call callback with collection of todo's
 };
 
 exports.readOne = (id, callback) => {
   fs.readFile(path.join(exports.dataDir, `${id}.txt`), (err, data) => {
-    if (err) {
-      callback(err, '');
-    } else {
-      callback(null, { id, text: String(data)});
-    }
+    callback(0, { id, text: String(data) });
   });
 };
+
+var readOnePromise = Promise.promisify(exports.readOne); //Promisify !!!MUST!!! be after the declaration of error first callback
 
 exports.update = (id, text, callback) => {
   var fileDir = path.join(exports.dataDir, `${id}.txt`);
